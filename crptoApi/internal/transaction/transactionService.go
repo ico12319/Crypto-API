@@ -54,7 +54,7 @@ func (s *Service) CreateTransactionRecord(transaction models.Transaction) error 
 		}
 
 	} else if transaction.Type == constants.Sell {
-		if err = handleTransactionTypeBuy(s.aRepo, transaction, s.hRepo, tokenPrice); err != nil {
+		if err = handleTransactionTypeSell(s.aRepo, transaction, s.hRepo, tokenPrice); err != nil {
 			return err
 		}
 	}
