@@ -1,6 +1,7 @@
 package account
 
 import (
+	"context"
 	"crptoApi/pkg/models"
 	"sync"
 )
@@ -20,14 +21,24 @@ func GetInstance() *InMemoryAccountRepoImpl {
 	return instance
 }
 
-func (i *InMemoryAccountRepoImpl) GetBalance() float64 {
+func (i *InMemoryAccountRepoImpl) GetBalance(ctx context.Context) (float64, error) {
+	select {
+	case <-ctx.Done():
+		return 0.0, ctx.Err()
+	default:
+	}
 	i.mu.Lock()
 	defer instance.mu.Unlock()
 
-	return i.accounts[0].Balance
+	return i.accounts[0].Balance, nil
 }
 
-func (i *InMemoryAccountRepoImpl) UpdateBalance(amount float64) error {
+func (i *InMemoryAccountRepoImpl) UpdateBalance(ctx context.Context, amount float64) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
 	i.mu.Lock()
 	defer i.mu.Unlock()
 

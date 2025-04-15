@@ -1,6 +1,7 @@
 package coin
 
 import (
+	"context"
 	"crptoApi/pkg/constants"
 	"crptoApi/pkg/models"
 	"encoding/json"
@@ -16,9 +17,9 @@ func NewHttpCoinService(client *http.Client) *HTTPCoinService {
 	return &HTTPCoinService{client: client}
 }
 
-func (h *HTTPCoinService) GetCoinPrice(cryptoId string) (float64, error) {
+func (h *HTTPCoinService) GetCoinPrice(ctx context.Context, cryptoId string) (float64, error) {
 	url := formatUrl(cryptoId)
-	resp, err := getResponse(h.client, url)
+	resp, err := getResponse(ctx, h.client, url)
 	if err != nil {
 		return 0.0, err
 	}
@@ -38,8 +39,12 @@ func formatUrl(cryptoId string) string {
 	return url
 }
 
-func getResponse(client *http.Client, url string) (*http.Response, error) {
-	resp, err := client.Get(url)
+func getResponse(ctx context.Context, client *http.Client, url string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

@@ -46,6 +46,7 @@ func (s *Server) registerRoutes(router *mux.Router) {
 
 func (s *Server) Start() {
 	router := mux.NewRouter()
+	router.Use()
 	s.registerRoutes(router)
 	log.Fatal(http.ListenAndServe(":5050", router))
 }

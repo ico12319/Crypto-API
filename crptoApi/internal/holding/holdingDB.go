@@ -1,6 +1,7 @@
 package holding
 
 import (
+	"context"
 	"crptoApi/pkg/models"
 	"fmt"
 	"sync"
@@ -21,7 +22,12 @@ func GetInstance() *InMemoryHoldingReoImpl {
 	return instance
 }
 
-func (i *InMemoryHoldingReoImpl) CreateHolding(holding models.Holding) error {
+func (i *InMemoryHoldingReoImpl) CreateHolding(ctx context.Context, holding models.Holding) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
@@ -33,7 +39,12 @@ func (i *InMemoryHoldingReoImpl) CreateHolding(holding models.Holding) error {
 	return nil
 }
 
-func (i *InMemoryHoldingReoImpl) DeleteHolding(cryptoId string) error {
+func (i *InMemoryHoldingReoImpl) DeleteHolding(ctx context.Context, cryptoId string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
@@ -45,7 +56,13 @@ func (i *InMemoryHoldingReoImpl) DeleteHolding(cryptoId string) error {
 	return nil
 }
 
-func (i *InMemoryHoldingReoImpl) UpdateHolding(cryptoId string, quantity float64) error {
+func (i *InMemoryHoldingReoImpl) UpdateHolding(ctx context.Context, cryptoId string, quantity float64) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
@@ -59,7 +76,12 @@ func (i *InMemoryHoldingReoImpl) UpdateHolding(cryptoId string, quantity float64
 	return nil
 }
 
-func (i *InMemoryHoldingReoImpl) GetHolding(cryptoId string) (models.Holding, error) {
+func (i *InMemoryHoldingReoImpl) GetHolding(ctx context.Context, cryptoId string) (models.Holding, error) {
+	select {
+	case <-ctx.Done():
+		return models.Holding{}, ctx.Err()
+	default:
+	}
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
@@ -70,9 +92,13 @@ func (i *InMemoryHoldingReoImpl) GetHolding(cryptoId string) (models.Holding, er
 	return h, nil
 }
 
-func (i *InMemoryHoldingReoImpl) GetHoldings() map[string]models.Holding {
+func (i *InMemoryHoldingReoImpl) GetHoldings(ctx context.Context) (map[string]models.Holding, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
 	i.mu.Lock()
 	defer i.mu.Unlock()
-
-	return i.holdings
+	return i.holdings, nil
 }

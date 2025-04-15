@@ -1,17 +1,19 @@
 package holding
 
 import (
+	"context"
 	"crptoApi/pkg/constants"
 	"crptoApi/pkg/models"
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/mux"
 	"net/http"
+	"time"
 )
 
 type HoldingService interface {
-	GetHoldingRecord(id string) (models.Holding, error)
-	GetHoldingsRecords() map[string]models.Holding
+	GetHoldingRecord(ctx context.Context, id string) (models.Holding, error)
+	GetHoldingsRecords(ctx context.Context) (map[string]models.Holding, error)
 }
 
 type HoldingHandler struct {
@@ -28,7 +30,11 @@ func (h *HoldingHandler) GetHoldingHandler(w http.ResponseWriter, r *http.Reques
 	if !ok {
 		http.Error(w, errors.New("invalid query parameter").Error(), http.StatusBadRequest)
 	}
-	holding, err := h.service.GetHoldingRecord(cryptoId)
+	ctx := r.Context()
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
+	defer cancel()
+
+	holding, err := h.service.GetHoldingRecord(ctx, cryptoId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -41,7 +47,14 @@ func (h *HoldingHandler) GetHoldingHandler(w http.ResponseWriter, r *http.Reques
 
 func (h *HoldingHandler) GetHoldingsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set(constants.CONTENT_TYPE, constants.JSON)
-	holdings := h.service.GetHoldingsRecords()
+	ctx := r.Context()
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
+	defer cancel()
+
+	holdings, err := h.service.GetHoldingsRecords(ctx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusRequestTimeout)
+	}
 	if err := json.NewEncoder(w).Encode(holdings); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

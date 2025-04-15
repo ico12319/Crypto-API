@@ -1,7 +1,9 @@
 package transaction
 
 import (
+	"context"
 	"crptoApi/pkg/models"
+	"errors"
 	"fmt"
 	"sync"
 )
@@ -21,7 +23,8 @@ func GetInstance() *InMemoryTransactionRepoImpl {
 	return instance
 }
 
-func (i *InMemoryTransactionRepoImpl) CreateTransaction(transaction models.Transaction) error {
+func (i *InMemoryTransactionRepoImpl) CreateTransaction(ctx context.Context, transaction models.Transaction) error {
+
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
@@ -33,20 +36,42 @@ func (i *InMemoryTransactionRepoImpl) CreateTransaction(transaction models.Trans
 	return nil
 }
 
-func (i *InMemoryTransactionRepoImpl) GetTransaction(id string) (models.Transaction, error) {
-	i.mu.Lock()
-	defer i.mu.Unlock()
+func (i *InMemoryTransactionRepoImpl) GetTransaction(ctx context.Context, id string) (models.Transaction, error) {
+	resChan := make(chan models.Transaction, 1)
+	errChan := make(chan error, 1)
+	go func() {
+		i.mu.Lock()
+		defer i.mu.Unlock()
 
-	t, isContained := i.transactions[id]
-	if !isContained {
-		return models.Transaction{}, fmt.Errorf("invalid transaction id %s", id)
+		t, isContained := i.transactions[id]
+		if !isContained {
+			errChan <- errors.New("invalid transaction id" + id)
+		} else {
+			resChan <- t
+		}
+	}()
+	select {
+	case <-ctx.Done():
+		return models.Transaction{}, ctx.Err()
+	case err := <-errChan:
+		return models.Transaction{}, err
+	case res := <-resChan:
+		return res, nil
 	}
-	return t, nil
 }
 
-func (i *InMemoryTransactionRepoImpl) GetTransactions() map[string]models.Transaction {
-	i.mu.Lock()
-	defer i.mu.Unlock()
+func (i *InMemoryTransactionRepoImpl) GetTransactions(ctx context.Context) (map[string]models.Transaction, error) {
+	resChan := make(chan map[string]models.Transaction, 1)
+	go func() {
+		i.mu.Lock()
+		defer i.mu.Unlock()
+		resChan <- i.transactions
+	}()
 
-	return i.transactions
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case result := <-resChan:
+		return result, nil
+	}
 }

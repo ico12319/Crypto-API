@@ -1,12 +1,13 @@
 package holding
 
 import (
+	"context"
 	"crptoApi/pkg/models"
 )
 
 type HoldingRepository interface {
-	GetHolding(id string) (models.Holding, error)
-	GetHoldings() map[string]models.Holding
+	GetHolding(ctx context.Context, id string) (models.Holding, error)
+	GetHoldings(ctx context.Context) (map[string]models.Holding, error)
 }
 
 type Service struct {
@@ -17,10 +18,10 @@ func NewService(hRepo HoldingRepository) *Service {
 	return &Service{hRepo: hRepo}
 }
 
-func (s *Service) GetHoldingRecord(id string) (models.Holding, error) {
-	return s.hRepo.GetHolding(id)
+func (s *Service) GetHoldingRecord(ctx context.Context, id string) (models.Holding, error) {
+	return s.hRepo.GetHolding(ctx, id)
 }
 
-func (s *Service) GetHoldingsRecords() map[string]models.Holding {
-	return s.hRepo.GetHoldings()
+func (s *Service) GetHoldingsRecords(ctx context.Context) (map[string]models.Holding, error) {
+	return s.hRepo.GetHoldings(ctx)
 }
