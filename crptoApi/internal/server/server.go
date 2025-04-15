@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crptoApi/internal/transaction"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -32,21 +33,33 @@ func NewServer(aHandler IAccountHandler, hHandler IHoldingHandler, tHandler ITra
 	return &Server{aHandler: aHandler, hHandler: hHandler, tHandler: tHandler}
 }
 
-func (s *Server) registerRoutes(router *mux.Router) {
-	router.HandleFunc("/transaction/", s.tHandler.GetTransactionsHandler).Methods(http.MethodGet)
-	router.HandleFunc("/transaction/{id}", s.tHandler.GetTransactionRecordHandler).Methods(http.MethodGet)
-	router.HandleFunc("/transaction/", s.tHandler.CreateTransactionHandler).Methods(http.MethodPost)
+func (s *Server) registerTransactionRoutes(router *mux.Router) {
+	router.HandleFunc("/", s.tHandler.GetTransactionsHandler).Methods(http.MethodGet)
+	router.HandleFunc("/{id}", s.tHandler.GetTransactionRecordHandler).Methods(http.MethodGet)
+	router.HandleFunc("/", s.tHandler.CreateTransactionHandler).Methods(http.MethodPost)
+}
 
-	router.HandleFunc("/account/", s.aHandler.GetBalanceHandler).Methods(http.MethodGet)
-	router.HandleFunc("/account/{quantity}", s.aHandler.UpdateBalanceHandler).Methods(http.MethodPut)
+func (s *Server) registerAccountRoutes(router *mux.Router) {
+	router.HandleFunc("/", s.aHandler.GetBalanceHandler).Methods(http.MethodGet)
+	router.HandleFunc("/{quantity}", s.aHandler.UpdateBalanceHandler).Methods(http.MethodPut)
+}
 
-	router.HandleFunc("/holding/", s.hHandler.GetHoldingsHandler).Methods(http.MethodGet)
-	router.HandleFunc("/holding/{crypto_id}", s.hHandler.GetHoldingHandler).Methods(http.MethodGet)
+func (s *Server) registerHoldingRoutes(router *mux.Router) {
+	router.HandleFunc("/", s.hHandler.GetHoldingsHandler).Methods(http.MethodGet)
+	router.HandleFunc("/{crypto_id}", s.hHandler.GetHoldingHandler).Methods(http.MethodGet)
 }
 
 func (s *Server) Start() {
 	router := mux.NewRouter()
-	router.Use()
-	s.registerRoutes(router)
+	transactionRouter := router.PathPrefix("/transaction").Subrouter()
+	transactionRouter.Use(transaction.LoggingMiddlewareFunc)
+	s.registerTransactionRoutes(transactionRouter)
+
+	accountRouter := router.PathPrefix("/account").Subrouter()
+	s.registerAccountRoutes(accountRouter)
+
+	holdingRouter := router.PathPrefix("/holding").Subrouter()
+	s.registerHoldingRoutes(holdingRouter)
+
 	log.Fatal(http.ListenAndServe(":5050", router))
 }

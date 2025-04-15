@@ -29,6 +29,7 @@ func (h *HoldingHandler) GetHoldingHandler(w http.ResponseWriter, r *http.Reques
 	cryptoId, ok := params["crypto_id"]
 	if !ok {
 		http.Error(w, errors.New("invalid query parameter").Error(), http.StatusBadRequest)
+		return
 	}
 	ctx := r.Context()
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
@@ -37,10 +38,12 @@ func (h *HoldingHandler) GetHoldingHandler(w http.ResponseWriter, r *http.Reques
 	holding, err := h.service.GetHoldingRecord(ctx, cryptoId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	w.Header().Set(constants.CONTENT_TYPE, constants.JSON)
 	if err := json.NewEncoder(w).Encode(holding); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -54,9 +57,11 @@ func (h *HoldingHandler) GetHoldingsHandler(w http.ResponseWriter, r *http.Reque
 	holdings, err := h.service.GetHoldingsRecords(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusRequestTimeout)
+		return
 	}
 	if err := json.NewEncoder(w).Encode(holdings); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 }

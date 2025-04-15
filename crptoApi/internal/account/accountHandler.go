@@ -32,9 +32,11 @@ func (a *AccountHandler) GetBalanceHandler(w http.ResponseWriter, r *http.Reques
 	balance, err := a.service.GetAccountBalance(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusRequestTimeout)
+		return
 	}
 	if err := json.NewEncoder(w).Encode(balance); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -44,10 +46,12 @@ func (a *AccountHandler) UpdateBalanceHandler(w http.ResponseWriter, r *http.Req
 	desiredBalance, ok := params["quantity"]
 	if !ok {
 		http.Error(w, errors.New("invalid query parameter").Error(), http.StatusBadRequest)
+		return
 	}
 	parsedBalance, err := strconv.ParseFloat(desiredBalance, 64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	w.Header().Set(constants.CONTENT_TYPE, constants.JSON)
 	ctx := r.Context()
@@ -56,6 +60,7 @@ func (a *AccountHandler) UpdateBalanceHandler(w http.ResponseWriter, r *http.Req
 
 	if err = a.service.UpdateAccountBalance(ctx, parsedBalance); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 }

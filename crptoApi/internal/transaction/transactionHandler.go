@@ -29,6 +29,7 @@ func (t *TransactionHandler) CreateTransactionHandler(w http.ResponseWriter, r *
 	var transaction models.Transaction
 	if err := json.NewDecoder(r.Body).Decode(&transaction); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	ctx := r.Context()
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
@@ -37,9 +38,11 @@ func (t *TransactionHandler) CreateTransactionHandler(w http.ResponseWriter, r *
 	w.Header().Set(constants.CONTENT_TYPE, constants.JSON)
 	if err := t.service.CreateTransactionRecord(ctx, transaction); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	if err := json.NewEncoder(w).Encode(transaction); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	w.WriteHeader(http.StatusCreated)
 }
@@ -49,6 +52,7 @@ func (t *TransactionHandler) GetTransactionRecordHandler(w http.ResponseWriter, 
 	id, ok := params["id"]
 	if !ok {
 		http.Error(w, errors.New("invalid query parameter").Error(), http.StatusBadRequest)
+		return
 	}
 	ctx := r.Context()
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Millisecond)
@@ -57,10 +61,12 @@ func (t *TransactionHandler) GetTransactionRecordHandler(w http.ResponseWriter, 
 	tModel, err := t.service.GetTransactionRecord(ctx, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	w.Header().Set(constants.CONTENT_TYPE, constants.JSON)
 	if err := json.NewEncoder(w).Encode(tModel); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -74,9 +80,11 @@ func (t *TransactionHandler) GetTransactionsHandler(w http.ResponseWriter, r *ht
 	transactions, err := t.service.GetTransactionsRecords(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusRequestTimeout)
+		return
 	}
 	if err := json.NewEncoder(w).Encode(&transactions); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 }
