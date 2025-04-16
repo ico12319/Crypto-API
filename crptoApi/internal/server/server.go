@@ -1,8 +1,7 @@
 package server
 
 import (
-	"crptoApi/internal/transaction"
-	"crptoApi/internal/validationMiddleware"
+	"crptoApi/internal/middlewares"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -52,10 +51,11 @@ func (s *Server) registerHoldingRoutes(router *mux.Router) {
 
 func (s *Server) Start() {
 	router := mux.NewRouter()
-	router.Use(validationMiddleware.ValidationMiddlewareFunc)
-	
+	router.Use(middlewares.ValidationMiddlewareFunc)
+	router.Use(middlewares.ContentTypeMiddlewareFunc)
+
 	transactionRouter := router.PathPrefix("/transaction").Subrouter()
-	transactionRouter.Use(transaction.LoggingMiddlewareFunc)
+	transactionRouter.Use(middlewares.LoggingMiddlewareFunc)
 	s.registerTransactionRoutes(transactionRouter)
 
 	accountRouter := router.PathPrefix("/account").Subrouter()

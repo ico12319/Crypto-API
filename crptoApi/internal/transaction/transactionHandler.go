@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"context"
-	"crptoApi/pkg/constants"
 	"crptoApi/pkg/models"
 	"encoding/json"
 	"errors"
@@ -35,7 +34,6 @@ func (t *TransactionHandler) CreateTransactionHandler(w http.ResponseWriter, r *
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
-	w.Header().Set(constants.CONTENT_TYPE, constants.JSON)
 	if err := t.service.CreateTransactionRecord(ctx, transaction); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -63,7 +61,6 @@ func (t *TransactionHandler) GetTransactionRecordHandler(w http.ResponseWriter, 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set(constants.CONTENT_TYPE, constants.JSON)
 	if err := json.NewEncoder(w).Encode(tModel); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -76,7 +73,6 @@ func (t *TransactionHandler) GetTransactionsHandler(w http.ResponseWriter, r *ht
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Millisecond)
 	defer cancel()
 
-	w.Header().Set(constants.CONTENT_TYPE, constants.JSON)
 	transactions, err := t.service.GetTransactionsRecords(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusRequestTimeout)

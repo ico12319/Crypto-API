@@ -24,7 +24,6 @@ func GetInstance() *InMemoryTransactionRepoImpl {
 }
 
 func (i *InMemoryTransactionRepoImpl) CreateTransaction(ctx context.Context, transaction models.Transaction) error {
-
 	i.mu.Lock()
 	defer i.mu.Unlock()
 

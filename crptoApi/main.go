@@ -28,5 +28,4 @@ func main() {
 
 	serv := server.NewServer(aHandler, hHandler, tHandler)
 	serv.Start()
-	
 }

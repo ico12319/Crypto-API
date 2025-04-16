@@ -1,4 +1,4 @@
-package transaction
+package middlewares
 
 import (
 	"crptoApi/internal/responseWriter"
@@ -27,7 +27,7 @@ func (l *LoggingMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	duration := time.Since(start)
 	log.Printf("[Response] Completed in %v with status code %d", duration, decoratorResponseWriter.GetStatusCode())
 	if decoratorResponseWriter.GetStatusCode() >= http.StatusBadRequest {
-		log.Printf("[Eroor] Reqeust %s %s returned error status %d", r.Method, r.RequestURI, decoratorResponseWriter.GetStatusCode())
+		log.Printf("[Error] Reqeust %s %s returned error status %d", r.Method, r.RequestURI, decoratorResponseWriter.GetStatusCode())
 	}
 }
 

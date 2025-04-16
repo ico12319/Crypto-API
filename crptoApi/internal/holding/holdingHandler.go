@@ -2,7 +2,6 @@ package holding
 
 import (
 	"context"
-	"crptoApi/pkg/constants"
 	"crptoApi/pkg/models"
 	"encoding/json"
 	"errors"
@@ -40,7 +39,6 @@ func (h *HoldingHandler) GetHoldingHandler(w http.ResponseWriter, r *http.Reques
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set(constants.CONTENT_TYPE, constants.JSON)
 	if err := json.NewEncoder(w).Encode(holding); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -49,9 +47,8 @@ func (h *HoldingHandler) GetHoldingHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *HoldingHandler) GetHoldingsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set(constants.CONTENT_TYPE, constants.JSON)
 	ctx := r.Context()
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Millisecond)
 	defer cancel()
 
 	holdings, err := h.service.GetHoldingsRecords(ctx)

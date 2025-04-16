@@ -2,7 +2,6 @@ package account
 
 import (
 	"context"
-	"crptoApi/pkg/constants"
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/mux"
@@ -24,7 +23,6 @@ func NewAccountHandler(service AccountService) *AccountHandler {
 }
 
 func (a *AccountHandler) GetBalanceHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set(constants.CONTENT_TYPE, constants.JSON)
 	ctx := r.Context()
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
 	defer cancel()
@@ -53,7 +51,6 @@ func (a *AccountHandler) UpdateBalanceHandler(w http.ResponseWriter, r *http.Req
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	w.Header().Set(constants.CONTENT_TYPE, constants.JSON)
 	ctx := r.Context()
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
 	defer cancel()

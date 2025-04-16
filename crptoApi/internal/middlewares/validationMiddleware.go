@@ -1,4 +1,4 @@
-package validationMiddleware
+package middlewares
 
 import (
 	"crptoApi/pkg/constants"
