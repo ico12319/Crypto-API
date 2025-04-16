@@ -27,7 +27,7 @@ func (h *HTTPCoinService) GetCoinPrice(ctx context.Context, cryptoId string) (fl
 	if err := json.NewDecoder(resp.Body).Decode(&coin); err != nil {
 		return 0.0, err
 	}
-	price, ok := coin.MarketData.CurrentPrice[constants.USD]
+	price, ok := coin.MData.CurrentPrice[constants.USD]
 	if !ok {
 		return 0.0, fmt.Errorf("no data for this crypto_token %s", cryptoId)
 	}
