@@ -12,8 +12,8 @@ import (
 
 type TransactionService interface {
 	CreateTransactionRecord(ctx context.Context, transaction models.Transaction) error
-	GetTransactionRecord(ctx context.Context, id string) (models.Transaction, error)
-	GetTransactionsRecords(ctx context.Context) (map[string]models.Transaction, error)
+	GetTransactionRecord(id string) (models.Transaction, error)
+	GetTransactionsRecords() ([]models.Transaction, error)
 }
 
 type TransactionHandler struct {
@@ -52,11 +52,7 @@ func (t *TransactionHandler) GetTransactionRecordHandler(w http.ResponseWriter, 
 		http.Error(w, errors.New("invalid query parameter").Error(), http.StatusBadRequest)
 		return
 	}
-	ctx := r.Context()
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Millisecond)
-	defer cancel()
-
-	tModel, err := t.service.GetTransactionRecord(ctx, id)
+	tModel, err := t.service.GetTransactionRecord(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -69,11 +65,7 @@ func (t *TransactionHandler) GetTransactionRecordHandler(w http.ResponseWriter, 
 }
 
 func (t *TransactionHandler) GetTransactionsHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Millisecond)
-	defer cancel()
-
-	transactions, err := t.service.GetTransactionsRecords(ctx)
+	transactions, err := t.service.GetTransactionsRecords()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusRequestTimeout)
 		return

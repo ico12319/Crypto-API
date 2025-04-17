@@ -1,18 +1,16 @@
 package account
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 type AccountService interface {
-	GetAccountBalance(ctx context.Context) (float64, error)
-	UpdateAccountBalance(ctx context.Context, amount float64) error
+	GetAccountBalance() (float64, error)
+	UpdateAccountBalance(amount float64) error
 }
 type AccountHandler struct {
 	service AccountService
@@ -23,11 +21,7 @@ func NewAccountHandler(service AccountService) *AccountHandler {
 }
 
 func (a *AccountHandler) GetBalanceHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
-	defer cancel()
-
-	balance, err := a.service.GetAccountBalance(ctx)
+	balance, err := a.service.GetAccountBalance()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusRequestTimeout)
 		return
@@ -51,11 +45,8 @@ func (a *AccountHandler) UpdateBalanceHandler(w http.ResponseWriter, r *http.Req
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	ctx := r.Context()
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
-	defer cancel()
 
-	if err = a.service.UpdateAccountBalance(ctx, parsedBalance); err != nil {
+	if err = a.service.UpdateAccountBalance(parsedBalance); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

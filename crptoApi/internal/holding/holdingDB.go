@@ -1,104 +1,82 @@
 package holding
 
 import (
-	"context"
+	"crptoApi/internal/converters"
+	"crptoApi/internal/entities"
 	"crptoApi/pkg/models"
+	"database/sql"
 	"fmt"
-	"sync"
 )
 
-type InMemoryHoldingReoImpl struct {
-	mu       sync.Mutex
-	holdings map[string]models.Holding
+type IDatabase interface {
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Get(dest interface{}, query string, args ...interface{}) error
+	Select(dest interface{}, query string, args ...interface{}) error
 }
 
-var once sync.Once
-var instance *InMemoryHoldingReoImpl
-
-func GetInstance() *InMemoryHoldingReoImpl {
-	once.Do(func() {
-		instance = &InMemoryHoldingReoImpl{holdings: make(map[string]models.Holding)}
-	})
-	return instance
+type SQLHoldingDB struct {
+	db IDatabase
 }
 
-func (i *InMemoryHoldingReoImpl) CreateHolding(ctx context.Context, holding models.Holding) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
-	i.mu.Lock()
-	defer i.mu.Unlock()
+func NewSQLHoldingDB(db IDatabase) *SQLHoldingDB {
+	return &SQLHoldingDB{db: db}
+}
 
-	_, isAlreadyContained := i.holdings[holding.Crypto]
-	if isAlreadyContained {
-		return fmt.Errorf("holding with %s crypto_id already existing", holding.Crypto)
+func (s *SQLHoldingDB) CreateHolding(holding models.Holding) error {
+	convertedEntity := converters.ConvertFromModelToEntityHolding(holding)
+	_, err := s.db.Exec("INSERT INTO holdings(crypto_id,quantity,price_bought) VALUES(?,?,?)", convertedEntity.CryptoId, convertedEntity.Quantity, convertedEntity.PriceBought)
+	if err != nil {
+		return nil
 	}
-	i.holdings[holding.Crypto] = holding
 	return nil
 }
 
-func (i *InMemoryHoldingReoImpl) DeleteHolding(ctx context.Context, cryptoId string) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
+func (s *SQLHoldingDB) GetHoldings() ([]models.Holding, error) {
+	var entityHoldings []entities.Holding
+	if err := s.db.Select(&entityHoldings, "SELECT * FROM holdings"); err != nil {
+		return nil, err
 	}
-	i.mu.Lock()
-	defer i.mu.Unlock()
+	modelsHoldings := make([]models.Holding, len(entityHoldings))
+	for index, entity := range entityHoldings {
+		convertedToModel := converters.ConvertFromEntityToModelHolding(entity)
+		modelsHoldings[index] = convertedToModel
+	}
+	return modelsHoldings, nil
+}
 
-	_, isContained := i.holdings[cryptoId]
-	if !isContained {
-		return fmt.Errorf("non-existing crypto_id %s", cryptoId)
+func (s *SQLHoldingDB) GetHolding(cryptoId string) (models.Holding, error) {
+	var entity entities.Holding
+	if err := s.db.Get(&entity, "SELECT * FROM holdings WHERE crypto_id=?", cryptoId); err != nil {
+		return models.Holding{}, err
 	}
-	delete(i.holdings, cryptoId)
+	return converters.ConvertFromEntityToModelHolding(entity), nil
+}
+
+func (s *SQLHoldingDB) DeleteHolding(cryptoId string) error {
+	res, err := s.db.Exec("DELETE FROM holdings WHERE crypto_id=?", cryptoId)
+	if err != nil {
+		return err
+	}
+	rowsAffectedCount, _ := res.RowsAffected()
+	if rowsAffectedCount == 0 {
+		return fmt.Errorf("invalid id provided")
+	}
 	return nil
 }
 
-func (i *InMemoryHoldingReoImpl) UpdateHolding(ctx context.Context, cryptoId string, quantity float64) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
+func (s *SQLHoldingDB) UpdateHolding(cryptoId string, quantity float64) error {
+	var entity entities.Holding
+	if err := s.db.Get(&entity, "SELECT * FROM holdings WHERE crypto_id=?", cryptoId); err != nil {
+		return fmt.Errorf("invalid crypto id provided %s", cryptoId)
 	}
-
-	i.mu.Lock()
-	defer i.mu.Unlock()
-
-	h, isContained := i.holdings[cryptoId]
-	if !isContained {
-		return fmt.Errorf("non-existing crypto_id %s", cryptoId)
+	desiredQuantity := entity.Quantity + quantity
+	res, err := s.db.Exec("UPDATE holdings SET quantity=? WHERE crypto_id =?", desiredQuantity, cryptoId)
+	if err != nil {
+		return err
 	}
-
-	h.Quantity += quantity
-	i.holdings[cryptoId] = h
+	rowsAffectedCount, _ := res.RowsAffected()
+	if rowsAffectedCount == 0 {
+		return fmt.Errorf("error when trying to update token %s", cryptoId)
+	}
 	return nil
-}
-
-func (i *InMemoryHoldingReoImpl) GetHolding(ctx context.Context, cryptoId string) (models.Holding, error) {
-	select {
-	case <-ctx.Done():
-		return models.Holding{}, ctx.Err()
-	default:
-	}
-	i.mu.Lock()
-	defer i.mu.Unlock()
-
-	h, isContained := i.holdings[cryptoId]
-	if !isContained {
-		return models.Holding{}, fmt.Errorf("invalid crypto_id %s", cryptoId)
-	}
-	return h, nil
-}
-
-func (i *InMemoryHoldingReoImpl) GetHoldings(ctx context.Context) (map[string]models.Holding, error) {
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	default:
-	}
-	i.mu.Lock()
-	defer i.mu.Unlock()
-	return i.holdings, nil
 }

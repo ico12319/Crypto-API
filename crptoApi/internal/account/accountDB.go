@@ -1,47 +1,53 @@
 package account
 
 import (
-	"context"
-	"crptoApi/pkg/models"
-	"sync"
+	"crptoApi/internal/entities"
+	"database/sql"
+	"errors"
 )
 
-type InMemoryAccountRepoImpl struct {
-	mu       sync.Mutex
-	accounts []models.Account
+type IDatabase interface {
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Get(dest interface{}, query string, args ...interface{}) error
+	Select(dest interface{}, query string, args ...interface{}) error
+}
+type SQLAccountDB struct {
+	db IDatabase
 }
 
-var once sync.Once
-var instance *InMemoryAccountRepoImpl
-
-func GetInstance() *InMemoryAccountRepoImpl {
-	once.Do(func() {
-		instance = &InMemoryAccountRepoImpl{accounts: make([]models.Account, 1, 8)}
-	})
-	return instance
+func NewSQLAccountDB(database IDatabase) *SQLAccountDB {
+	return &SQLAccountDB{db: database}
 }
 
-func (i *InMemoryAccountRepoImpl) GetBalance(ctx context.Context) (float64, error) {
-	select {
-	case <-ctx.Done():
-		return 0.0, ctx.Err()
-	default:
+func (s *SQLAccountDB) createAccount() error {
+	_, err := s.db.Exec("INSERT INTO accounts(balance) VALUES(?)", 0.0)
+	if err != nil {
+		return err
 	}
-	i.mu.Lock()
-	defer instance.mu.Unlock()
-
-	return i.accounts[0].Balance, nil
+	return nil
 }
 
-func (i *InMemoryAccountRepoImpl) UpdateBalance(ctx context.Context, amount float64) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
+func (s *SQLAccountDB) GetBalance() (float64, error) {
+	var entity entities.Account
+	if err := s.db.Get(&entity, "SELECT * FROM accounts WHERE id=?", 1); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = s.createAccount()
+			if err != nil {
+				return 0.0, err
+			}
+		}
 	}
-	i.mu.Lock()
-	defer i.mu.Unlock()
+	return entity.Balance, nil
+}
 
-	i.accounts[0].Balance += amount
+func (s *SQLAccountDB) UpdateBalance(amount float64) error {
+	currBalance, err := s.GetBalance()
+	if err != nil {
+		return err
+	}
+	_, err = s.db.Exec("UPDATE accounts SET balance=? WHERE id=?", currBalance+amount, 1)
+	if err != nil {
+		return err
+	}
 	return nil
 }

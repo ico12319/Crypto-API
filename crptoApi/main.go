@@ -6,15 +6,36 @@ import (
 	"crptoApi/internal/holding"
 	"crptoApi/internal/server"
 	"crptoApi/internal/transaction"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 	"net/http"
 )
 
 func main() {
-	hRepo := holding.GetInstance()
+
+	transactionDb, err := sqlx.Connect("sqlite3", "transactions.db")
+	if err != nil {
+		panic("failed to connect")
+	}
+	defer transactionDb.Close()
+
+	holdingDb, err := sqlx.Connect("sqlite3", "holdings.db")
+	if err != nil {
+		panic("failed to connect")
+	}
+	defer holdingDb.Close()
+
+	accountDb, err := sqlx.Connect("sqlite3", "accounts.db")
+	if err != nil {
+		panic("failed to connect")
+	}
+	defer accountDb.Close()
+
+	hRepo := holding.NewSQLHoldingDB(holdingDb)
 	hService := holding.NewService(hRepo)
 	hHandler := holding.NewHoldingHandler(hService)
 
-	aRepo := account.GetInstance()
+	aRepo := account.NewSQLAccountDB(accountDb)
 	aService := account.NewService(aRepo)
 	aHandler := account.NewAccountHandler(aService)
 
@@ -22,7 +43,7 @@ func main() {
 
 	cService := coin.NewHttpCoinService(client)
 
-	tRepo := transaction.GetInstance()
+	tRepo := transaction.NewSQLTransactionDB(transactionDb)
 	tService := transaction.NewService(tRepo, aRepo, hRepo, cService)
 	tHandler := transaction.NewTransactionHandler(tService)
 

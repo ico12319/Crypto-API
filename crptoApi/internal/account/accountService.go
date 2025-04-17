@@ -1,7 +1,6 @@
 package account
 
 import (
-	"context"
 	"crptoApi/internal/transaction"
 )
 
@@ -13,10 +12,10 @@ func NewService(aRepo transaction.AccountRepository) *Service {
 	return &Service{aRepo: aRepo}
 }
 
-func (s *Service) GetAccountBalance(ctx context.Context) (float64, error) {
-	return s.aRepo.GetBalance(ctx)
+func (s *Service) GetAccountBalance() (float64, error) {
+	return s.aRepo.GetBalance()
 }
 
-func (s *Service) UpdateAccountBalance(ctx context.Context, amount float64) error {
-	return s.aRepo.UpdateBalance(ctx, amount)
+func (s *Service) UpdateAccountBalance(amount float64) error {
+	return s.aRepo.UpdateBalance(amount)
 }

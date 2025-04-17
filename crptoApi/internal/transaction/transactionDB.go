@@ -2,75 +2,56 @@ package transaction
 
 import (
 	"context"
+	"crptoApi/internal/converters"
+	"crptoApi/internal/entities"
 	"crptoApi/pkg/models"
-	"errors"
-	"fmt"
-	"sync"
+	"database/sql"
 )
 
-type InMemoryTransactionRepoImpl struct {
-	mu           sync.Mutex
-	transactions map[string]models.Transaction
+type IDatabase interface {
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Get(dest interface{}, query string, args ...interface{}) error
+	Select(dest interface{}, query string, args ...interface{}) error
 }
 
-var once sync.Once
-var instance *InMemoryTransactionRepoImpl
-
-func GetInstance() *InMemoryTransactionRepoImpl {
-	once.Do(func() {
-		instance = &InMemoryTransactionRepoImpl{transactions: make(map[string]models.Transaction)}
-	})
-	return instance
+type SQLTransactionDB struct {
+	db IDatabase
 }
 
-func (i *InMemoryTransactionRepoImpl) CreateTransaction(ctx context.Context, transaction models.Transaction) error {
-	i.mu.Lock()
-	defer i.mu.Unlock()
+func NewSQLTransactionDB(DB IDatabase) *SQLTransactionDB {
+	return &SQLTransactionDB{db: DB}
+}
 
-	_, isAlreadyContained := i.transactions[transaction.ID]
-	if isAlreadyContained {
-		return fmt.Errorf("transaction with this %s id already exist", transaction.ID)
+func (s *SQLTransactionDB) CreateTransaction(ctx context.Context, transaction models.Transaction) error {
+	convertedDbEntity := converters.ConvertFromModelToEntity(transaction)
+	res, err := s.db.Exec("INSERT INTO transactions(type,crypto_name,quantity) VALUES(?,?,?)", convertedDbEntity.Type, convertedDbEntity.CryptoName, convertedDbEntity.Quantity)
+	if err != nil {
+		return err
 	}
-	i.transactions[transaction.ID] = transaction
+	convertedDbEntity.ID, err = res.LastInsertId()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (i *InMemoryTransactionRepoImpl) GetTransaction(ctx context.Context, id string) (models.Transaction, error) {
-	resChan := make(chan models.Transaction, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		i.mu.Lock()
-		defer i.mu.Unlock()
-
-		t, isContained := i.transactions[id]
-		if !isContained {
-			errChan <- errors.New("invalid transaction id" + id)
-		} else {
-			resChan <- t
-		}
-	}()
-	select {
-	case <-ctx.Done():
-		return models.Transaction{}, ctx.Err()
-	case err := <-errChan:
+func (s *SQLTransactionDB) GetTransaction(id string) (models.Transaction, error) {
+	var entity entities.Transaction
+	if err := s.db.Get(&entity, "SELECT id,type,crypto_name,quantity FROM transactions WHERE id=?", id); err != nil {
 		return models.Transaction{}, err
-	case res := <-resChan:
-		return res, nil
 	}
+	return converters.ConvertFromEntityToModel(entity), nil
 }
 
-func (i *InMemoryTransactionRepoImpl) GetTransactions(ctx context.Context) (map[string]models.Transaction, error) {
-	resChan := make(chan map[string]models.Transaction, 1)
-	go func() {
-		i.mu.Lock()
-		defer i.mu.Unlock()
-		resChan <- i.transactions
-	}()
-
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case result := <-resChan:
-		return result, nil
+func (s *SQLTransactionDB) GetTransactions() ([]models.Transaction, error) {
+	var transactionEntities []entities.Transaction
+	if err := s.db.Select(&transactionEntities, "SELECT * FROM transactions"); err != nil {
+		return nil, err
 	}
+	result := make([]models.Transaction, len(transactionEntities))
+	for index, transactionEntity := range transactionEntities {
+		convertedModel := converters.ConvertFromEntityToModel(transactionEntity)
+		result[index] = convertedModel
+	}
+	return result, nil
 }
