@@ -7,8 +7,11 @@ A web API for managing a crypto portfolio: fetching real-time prices, controllin
 
 ## 🚀 Installation
   git clone https://github.com/yourusername/crypto-api.git
+  
   cd crypto-api
+  
   go mod download
+  
   go build -o crypto-server cmd/server.go
   ./crypto-server  # listens on :5050
 
