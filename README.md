@@ -2,7 +2,9 @@
 A web API for managing a crypto portfolio: fetching real-time prices, controlling account balance, holdings, and transactions.
 ## 📦 Tech Stack
   Go
+  
   SQLite (github.com/mattn/go-sqlite3)
+  
   Gorilla Mux (HTTP routing)
 
 ## 🚀 Installation
