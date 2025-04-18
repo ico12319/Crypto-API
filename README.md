@@ -37,7 +37,9 @@ A web API for managing a crypto portfolio: fetching real-time prices, controllin
 
 ## ⚙️ Configuration
   Port: 5050 (in cmd/server.go)
+  
   Cache TTL: 2m (internal/cache/priceCache.go)
+  
   Auth header: Authorization: admin (middlewares/validationMiddleware.go), if not provided you won't be authorized to make any requests
 
 ## 🏗 Design Patterns
