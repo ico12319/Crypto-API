@@ -8,6 +8,7 @@ import (
 	"strconv"
 )
 
+//go:generate mockery --name=AccountService --output=./mocks --outpkg=mocks --filename=account_service.go --with-expecter=true
 type AccountService interface {
 	GetAccountBalance() (float64, error)
 	UpdateAccountBalance(amount float64) error
@@ -23,14 +24,14 @@ func NewAccountHandler(service AccountService) *AccountHandler {
 func (a *AccountHandler) GetBalanceHandler(w http.ResponseWriter, r *http.Request) {
 	balance, err := a.service.GetAccountBalance()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusRequestTimeout)
-		return
-	}
-	if err := json.NewEncoder(w).Encode(balance); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(balance); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func (a *AccountHandler) UpdateBalanceHandler(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +46,6 @@ func (a *AccountHandler) UpdateBalanceHandler(w http.ResponseWriter, r *http.Req
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	if err = a.service.UpdateAccountBalance(parsedBalance); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

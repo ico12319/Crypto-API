@@ -7,6 +7,12 @@ import (
 	"fmt"
 )
 
+type ICache interface {
+	AddToCache(cryptoId string, price float64) bool
+	GetPrice(cryptoId string) (float64, bool)
+}
+
+//go:generate mockery --name=AccountRepository --output=./mocks --outpkg=mocks --filename=account_repository.go --with-expecter=true
 type AccountRepository interface {
 	GetBalance() (float64, error)
 	UpdateBalance(amount float64) error
@@ -35,28 +41,34 @@ type Service struct {
 	aRepo    AccountRepository
 	hRepo    HoldingRepository
 	cService CoinService
+	cache    ICache
 }
 
-func NewService(tRepo TransactionRepository, aRepo AccountRepository, hRepo HoldingRepository, cService CoinService) *Service {
-	return &Service{tRepo: tRepo, aRepo: aRepo, hRepo: hRepo, cService: cService}
+func NewService(tRepo TransactionRepository, aRepo AccountRepository, hRepo HoldingRepository, cService CoinService, cache ICache) *Service {
+	return &Service{tRepo: tRepo, aRepo: aRepo, hRepo: hRepo, cService: cService, cache: cache}
 }
 
 func (s *Service) CreateTransactionRecord(ctx context.Context, transaction models.Transaction) error {
-	tokenPrice, err := s.cService.GetCoinPrice(ctx, transaction.Crypto)
-	if err != nil {
-		return err
+	tokenPrice, isCached := s.cache.GetPrice(transaction.Crypto)
+	if !isCached {
+		priceFromApi, err := s.cService.GetCoinPrice(ctx, transaction.Crypto)
+		if err != nil {
+			return err
+		}
+		tokenPrice = priceFromApi
+		s.cache.AddToCache(transaction.Crypto, tokenPrice)
 	}
 	if transaction.Type == constants.Buy {
-		if err = handleTransactionTypeBuy(s.aRepo, transaction, s.hRepo, tokenPrice); err != nil {
+		if err := handleTransactionTypeBuy(s.aRepo, transaction, s.hRepo, tokenPrice); err != nil {
 			return err
 		}
 
 	} else if transaction.Type == constants.Sell {
-		if err = handleTransactionTypeSell(s.aRepo, transaction, s.hRepo, tokenPrice); err != nil {
+		if err := handleTransactionTypeSell(s.aRepo, transaction, s.hRepo, tokenPrice); err != nil {
 			return err
 		}
 	}
-	if err = s.tRepo.CreateTransaction(ctx, transaction); err != nil {
+	if err := s.tRepo.CreateTransaction(ctx, transaction); err != nil {
 		return err
 	}
 	return nil

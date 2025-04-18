@@ -2,6 +2,7 @@ package main
 
 import (
 	"crptoApi/internal/account"
+	"crptoApi/internal/cache"
 	"crptoApi/internal/coin"
 	"crptoApi/internal/holding"
 	"crptoApi/internal/server"
@@ -12,7 +13,6 @@ import (
 )
 
 func main() {
-
 	transactionDb, err := sqlx.Connect("sqlite3", "transactions.db")
 	if err != nil {
 		panic("failed to connect")
@@ -25,7 +25,7 @@ func main() {
 	}
 	defer holdingDb.Close()
 
-	accountDb, err := sqlx.Connect("sqlite3", "accounts.db")
+	accountDb, err := sqlx.Connect("sqlite3", "users.db")
 	if err != nil {
 		panic("failed to connect")
 	}
@@ -44,9 +44,11 @@ func main() {
 	cService := coin.NewHttpCoinService(client)
 
 	tRepo := transaction.NewSQLTransactionDB(transactionDb)
-	tService := transaction.NewService(tRepo, aRepo, hRepo, cService)
+	c := cache.GetInstance()
+	tService := transaction.NewService(tRepo, aRepo, hRepo, cService, c)
 	tHandler := transaction.NewTransactionHandler(tService)
 
 	serv := server.NewServer(aHandler, hHandler, tHandler)
 	serv.Start()
+
 }

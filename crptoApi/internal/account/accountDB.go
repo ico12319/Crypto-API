@@ -6,6 +6,7 @@ import (
 	"errors"
 )
 
+//go:generate mockery --name=IDatabase --output=./mocks --outpkg=mocks --filename=Idatabase.go --with-expecter=true
 type IDatabase interface {
 	Exec(query string, args ...interface{}) (sql.Result, error)
 	Get(dest interface{}, query string, args ...interface{}) error
@@ -20,7 +21,7 @@ func NewSQLAccountDB(database IDatabase) *SQLAccountDB {
 }
 
 func (s *SQLAccountDB) createAccount() error {
-	_, err := s.db.Exec("INSERT INTO accounts(balance) VALUES(?)", 0.0)
+	_, err := s.db.Exec("INSERT INTO users(id,balance) VALUES(?,?)", 1, 0.0)
 	if err != nil {
 		return err
 	}
@@ -29,12 +30,13 @@ func (s *SQLAccountDB) createAccount() error {
 
 func (s *SQLAccountDB) GetBalance() (float64, error) {
 	var entity entities.Account
-	if err := s.db.Get(&entity, "SELECT * FROM accounts WHERE id=?", 1); err != nil {
+	if err := s.db.Get(&entity, "SELECT * FROM users WHERE id=?", 1); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = s.createAccount()
 			if err != nil {
 				return 0.0, err
 			}
+			return 0.0, nil
 		}
 	}
 	return entity.Balance, nil
@@ -45,7 +47,7 @@ func (s *SQLAccountDB) UpdateBalance(amount float64) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.db.Exec("UPDATE accounts SET balance=? WHERE id=?", currBalance+amount, 1)
+	_, err = s.db.Exec("UPDATE users SET balance=? WHERE id=?", currBalance+amount, 1)
 	if err != nil {
 		return err
 	}

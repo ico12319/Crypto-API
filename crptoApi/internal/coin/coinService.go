@@ -2,11 +2,11 @@ package coin
 
 import (
 	"context"
-	"crptoApi/pkg/constants"
 	"crptoApi/pkg/models"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
 type HTTPCoinService struct {
@@ -24,18 +24,15 @@ func (h *HTTPCoinService) GetCoinPrice(ctx context.Context, cryptoId string) (fl
 		return 0.0, err
 	}
 	var coin models.Coin
-	if err := json.NewDecoder(resp.Body).Decode(&coin); err != nil {
-		return 0.0, err
+	if err = json.NewDecoder(resp.Body).Decode(&coin); err != nil {
+		return 0.0, fmt.Errorf("unavailabe crypto token")
 	}
-	price, ok := coin.MData.CurrentPrice[constants.USD]
-	if !ok {
-		return 0.0, fmt.Errorf("no data for this crypto_token %s", cryptoId)
-	}
-	return price, nil
+	parsedPrice, _ := strconv.ParseFloat(coin.Price, 64)
+	return parsedPrice, nil
 }
 
 func formatUrl(cryptoId string) string {
-	url := fmt.Sprintf("https://api.coingecko.com/api/v3/coins/%s?localization=false", cryptoId)
+	url := fmt.Sprintf("https://api.binance.com/api/v3/ticker/price?symbol=%sUSDT", cryptoId)
 	return url
 }
 
