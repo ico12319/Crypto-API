@@ -64,7 +64,7 @@ func (s *SQLHoldingDB) DeleteHolding(cryptoId string) error {
 	return nil
 }
 
-func (s *SQLHoldingDB) UpdateHolding(cryptoId string, quantity float64) error {
+func (s *SQLHoldingDB) UpdateHoldingQuantity(cryptoId string, quantity float64) error {
 	var entity entities.Holding
 	if err := s.db.Get(&entity, "SELECT * FROM holdings WHERE crypto_id=?", cryptoId); err != nil {
 		return fmt.Errorf("invalid crypto id provided %s", cryptoId)
@@ -77,6 +77,22 @@ func (s *SQLHoldingDB) UpdateHolding(cryptoId string, quantity float64) error {
 	rowsAffectedCount, _ := res.RowsAffected()
 	if rowsAffectedCount == 0 {
 		return fmt.Errorf("error when trying to update token %s", cryptoId)
+	}
+	return nil
+}
+
+func (s *SQLHoldingDB) UpdateHoldingPrice(cryptoId string, newPrice float64) error {
+	var entity entities.Holding
+	if err := s.db.Get(&entity, "SELECT * FROM holdings WHERE crypto_id=?", cryptoId); err != nil {
+		return fmt.Errorf("invalid crypto id provided %s", cryptoId)
+	}
+	res, err := s.db.Exec("UPDATE holdings SET price_bought=? WHERE crypto_id=?", newPrice, cryptoId)
+	if err != nil {
+		return err
+	}
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("error when trying to update token %s price", cryptoId)
 	}
 	return nil
 }

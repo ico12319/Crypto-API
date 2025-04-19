@@ -20,7 +20,8 @@ type AccountRepository interface {
 
 type HoldingRepository interface {
 	CreateHolding(holding models.Holding) error
-	UpdateHolding(cryptoId string, quantity float64) error
+	UpdateHoldingQuantity(cryptoId string, quantity float64) error
+	UpdateHoldingPrice(cryptoId string, newPrice float64) error
 	GetHolding(cryptoId string) (models.Holding, error)
 	GetHoldings() ([]models.Holding, error)
 	DeleteHolding(cryptoId string) error
@@ -59,12 +60,12 @@ func (s *Service) CreateTransactionRecord(ctx context.Context, transaction model
 		s.cache.AddToCache(transaction.Crypto, tokenPrice)
 	}
 	if transaction.Type == constants.Buy {
-		if err := handleTransactionTypeBuy(s.aRepo, transaction, s.hRepo, tokenPrice); err != nil {
+		if err := handleTransactionTypeBuy(s.aRepo, transaction, s.hRepo, tokenPrice*transaction.Quantity); err != nil {
 			return err
 		}
 
 	} else if transaction.Type == constants.Sell {
-		if err := handleTransactionTypeSell(s.aRepo, transaction, s.hRepo, tokenPrice); err != nil {
+		if err := handleTransactionTypeSell(s.aRepo, transaction, s.hRepo, tokenPrice*transaction.Quantity); err != nil {
 			return err
 		}
 	}
@@ -111,18 +112,21 @@ func handleTransactionTypeBuy(aRepo AccountRepository, transaction models.Transa
 	if err != nil {
 		return err
 	}
-	err = hRepo.UpdateHolding(transaction.Crypto, transaction.Quantity)
+	err = hRepo.UpdateHoldingQuantity(transaction.Crypto, transaction.Quantity)
 	if err != nil {
-		if err = createNewHoldingHelper(hRepo, transaction.Crypto, transaction.Quantity, tokenPrice); err != nil {
-			return err
-		}
+		return createNewHoldingHelper(hRepo, transaction.Crypto, transaction.Quantity, tokenPrice)
 	}
-	return nil
+	holdingModel, _ := hRepo.GetHolding(transaction.Crypto)
+	return hRepo.UpdateHoldingPrice(transaction.Crypto, holdingModel.PriceBought+tokenPrice)
 }
 
 func handleTransactionTypeSell(aRepo AccountRepository, transaction models.Transaction, hRepo HoldingRepository, tokenPrice float64) error {
-	err := hRepo.UpdateHolding(transaction.Crypto, -transaction.Quantity)
+	err := hRepo.UpdateHoldingQuantity(transaction.Crypto, -transaction.Quantity)
 	if err != nil {
+		return err
+	}
+	holdingModel, _ := hRepo.GetHolding(transaction.Crypto)
+	if err = hRepo.UpdateHoldingPrice(transaction.Crypto, holdingModel.PriceBought-tokenPrice); err != nil {
 		return err
 	}
 	h, err := hRepo.GetHolding(transaction.Crypto)
