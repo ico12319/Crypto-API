@@ -1,9 +1,9 @@
 package holding
 
 import (
+	"crptoApi/internal/utills"
 	"crptoApi/pkg/models"
 	"encoding/json"
-	"errors"
 	"github.com/gorilla/mux"
 	"net/http"
 )
@@ -25,17 +25,20 @@ func (h *HoldingHandler) GetHoldingHandler(w http.ResponseWriter, r *http.Reques
 	params := mux.Vars(r)
 	cryptoId, ok := params["crypto_id"]
 	if !ok {
-		http.Error(w, errors.New("invalid query parameter").Error(), http.StatusBadRequest)
+		utills.EncodeError(w, "error in the query parameter")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	holding, err := h.service.GetHoldingRecord(cryptoId)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utills.EncodeError(w, "error when trying to get holding record")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if err := json.NewEncoder(w).Encode(holding); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err = json.NewEncoder(w).Encode(holding); err != nil {
+		utills.EncodeError(w, "error when trying to encode holding JSON response")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -44,11 +47,13 @@ func (h *HoldingHandler) GetHoldingHandler(w http.ResponseWriter, r *http.Reques
 func (h *HoldingHandler) GetHoldingsHandler(w http.ResponseWriter, r *http.Request) {
 	holdings, err := h.service.GetHoldingsRecords()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusRequestTimeout)
+		utills.EncodeError(w, "error when trying to get holdings records")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if err := json.NewEncoder(w).Encode(holdings); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err = json.NewEncoder(w).Encode(holdings); err != nil {
+		utills.EncodeError(w, "error when encoding holdings JSON response")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

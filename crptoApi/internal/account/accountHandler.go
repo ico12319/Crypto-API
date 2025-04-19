@@ -1,8 +1,8 @@
 package account
 
 import (
+	"crptoApi/internal/utills"
 	"encoding/json"
-	"errors"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
@@ -24,31 +24,53 @@ func NewAccountHandler(service AccountService) *AccountHandler {
 func (a *AccountHandler) GetBalanceHandler(w http.ResponseWriter, r *http.Request) {
 	balance, err := a.service.GetAccountBalance()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utills.EncodeError(w, "error when trying to get account balance")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	encodedSuccessString := "Current balance is " + strconv.FormatFloat(balance, 'f', 2, 64) + "$"
+	if err = json.NewEncoder(w).Encode(encodedSuccessString); err != nil {
+		utills.EncodeError(w, "error when trying to encode JSON response")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(balance); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 }
 
 func (a *AccountHandler) UpdateBalanceHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	desiredBalance, ok := params["quantity"]
 	if !ok {
-		http.Error(w, errors.New("invalid query parameter").Error(), http.StatusBadRequest)
+		utills.EncodeError(w, "error with query parameter")
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	parsedBalance, err := strconv.ParseFloat(desiredBalance, 64)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utills.EncodeError(w, "error when trying to parse provided quantity")
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	if err = a.service.UpdateAccountBalance(parsedBalance); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utills.EncodeError(w, "error when trying to update account balance")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	successString := buildSuccessStringHelper(w, parsedBalance)
+	if err = json.NewEncoder(w).Encode(successString); err != nil {
+		utills.EncodeError(w, "error when trying to encode JSON response")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func buildSuccessStringHelper(w http.ResponseWriter, balance float64) string {
+	var successString string
+	if balance < 0 {
+		successString = "Withdrew " + strconv.FormatFloat(balance, 'f', 2, 64) + "$"
+	} else {
+		successString = "Deposited " + strconv.FormatFloat(balance, 'f', 2, 64) + "$"
+	}
+	return successString
 }
