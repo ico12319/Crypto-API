@@ -8,7 +8,7 @@ A web API for managing a crypto portfolio: fetching real-time prices, controllin
   Gorilla Mux (HTTP routing)
 
 ## 🚀 Installation
-  git clone https://github.com/yourusername/crypto-api.git
+  git clone https://github.com/ico12319/crypto-api.git
   
   cd crypto-api
   
