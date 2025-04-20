@@ -24,12 +24,11 @@ func NewAccountHandler(service AccountService) *AccountHandler {
 func (a *AccountHandler) GetBalanceHandler(w http.ResponseWriter, r *http.Request) {
 	balance, err := a.service.GetAccountBalance()
 	if err != nil {
-		utills.EncodeError(w, "error when trying to get account balance")
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	encodedSuccessString := "Current balance is " + strconv.FormatFloat(balance, 'f', 2, 64) + "$"
-	if err = json.NewEncoder(w).Encode(encodedSuccessString); err != nil {
+	encodedSuccessString := strconv.FormatFloat(balance, 'f', 2, 64) + "$"
+	if err = json.NewEncoder(w).Encode(map[string]string{"balance": encodedSuccessString}); err != nil {
 		utills.EncodeError(w, "error when trying to encode JSON response")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -52,12 +51,11 @@ func (a *AccountHandler) UpdateBalanceHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 	if err = a.service.UpdateAccountBalance(parsedBalance); err != nil {
-		utills.EncodeError(w, "error when trying to update account balance")
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	successString := buildSuccessStringHelper(w, parsedBalance)
-	if err = json.NewEncoder(w).Encode(successString); err != nil {
+	if err = json.NewEncoder(w).Encode(map[string]string{"success": successString}); err != nil {
 		utills.EncodeError(w, "error when trying to encode JSON response")
 		w.WriteHeader(http.StatusInternalServerError)
 		return

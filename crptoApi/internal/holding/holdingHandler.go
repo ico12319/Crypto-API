@@ -32,8 +32,7 @@ func (h *HoldingHandler) GetHoldingHandler(w http.ResponseWriter, r *http.Reques
 
 	holding, err := h.service.GetHoldingRecord(cryptoId)
 	if err != nil {
-		utills.EncodeError(w, "error when trying to get holding record")
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if err = json.NewEncoder(w).Encode(holding); err != nil {
@@ -47,8 +46,7 @@ func (h *HoldingHandler) GetHoldingHandler(w http.ResponseWriter, r *http.Reques
 func (h *HoldingHandler) GetHoldingsHandler(w http.ResponseWriter, r *http.Request) {
 	holdings, err := h.service.GetHoldingsRecords()
 	if err != nil {
-		utills.EncodeError(w, "error when trying to get holdings records")
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if err = json.NewEncoder(w).Encode(holdings); err != nil {

@@ -36,8 +36,7 @@ func (t *TransactionHandler) CreateTransactionHandler(w http.ResponseWriter, r *
 	defer cancel()
 
 	if err := t.service.CreateTransactionRecord(ctx, transaction); err != nil {
-		utills.EncodeError(w, "error when trying to create transaction record")
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if err := json.NewEncoder(w).Encode(transaction); err != nil {
@@ -58,8 +57,7 @@ func (t *TransactionHandler) GetTransactionRecordHandler(w http.ResponseWriter, 
 	}
 	tModel, err := t.service.GetTransactionRecord(id)
 	if err != nil {
-		utills.EncodeError(w, "error when trying to get transaction record")
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if err = json.NewEncoder(w).Encode(tModel); err != nil {
@@ -73,8 +71,7 @@ func (t *TransactionHandler) GetTransactionRecordHandler(w http.ResponseWriter, 
 func (t *TransactionHandler) GetTransactionsHandler(w http.ResponseWriter, r *http.Request) {
 	transactions, err := t.service.GetTransactionsRecords()
 	if err != nil {
-		utills.EncodeError(w, "error when trying to get transaction records")
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if err = json.NewEncoder(w).Encode(&transactions); err != nil {
