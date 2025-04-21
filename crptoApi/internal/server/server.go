@@ -2,9 +2,11 @@ package server
 
 import (
 	"crptoApi/internal/middlewares"
+	"fmt"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+	"os"
 )
 
 type ITransactionHandler interface {
@@ -64,5 +66,7 @@ func (s *Server) Start() {
 	holdingRouter := router.PathPrefix("/holding").Subrouter()
 	s.registerHoldingRoutes(holdingRouter)
 
-	log.Fatal(http.ListenAndServe(":5050", router))
+	port := os.Getenv("PORT")
+	addr := fmt.Sprintf(":%s", port)
+	log.Fatal(http.ListenAndServe(addr, router))
 }

@@ -4,6 +4,7 @@ import (
 	"crptoApi/pkg/constants"
 	"encoding/json"
 	"net/http"
+	"os"
 )
 
 type ValidationMiddleware struct {
@@ -16,7 +17,8 @@ func newValidationMiddleware(next http.Handler) *ValidationMiddleware {
 
 func (v *ValidationMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	authHeader := r.Header.Get("Authorization")
-	if authHeader != constants.AUTH_TOKEN {
+	authToken := os.Getenv("AUTH_TOKEN")
+	if authHeader != authToken {
 		w.WriteHeader(http.StatusUnauthorized)
 		if err := json.NewEncoder(w).Encode(constants.AUTH_ERROR); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

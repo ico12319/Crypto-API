@@ -9,6 +9,7 @@ require (
 
 require (
 	github.com/jmoiron/sqlx v1.4.0
+	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.10.0
 )
 

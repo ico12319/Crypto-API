@@ -8,24 +8,35 @@ import (
 	"crptoApi/internal/server"
 	"crptoApi/internal/transaction"
 	"github.com/jmoiron/sqlx"
+	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
 	"net/http"
+	"os"
 )
 
+// this function will be executed before the main so there is no need to call it in the main
+func init() {
+	err := godotenv.Load(".env")
+	if err != nil {
+		panic(err)
+	}
+}
+
 func main() {
-	transactionDb, err := sqlx.Connect("sqlite3", "transactions.db")
+	driverName := os.Getenv("DRIVER_NAME")
+	transactionDb, err := sqlx.Connect(driverName, "transactions.db")
 	if err != nil {
 		panic("failed to connect")
 	}
 	defer transactionDb.Close()
 
-	holdingDb, err := sqlx.Connect("sqlite3", "holdings.db")
+	holdingDb, err := sqlx.Connect(driverName, "holdings.db")
 	if err != nil {
 		panic("failed to connect")
 	}
 	defer holdingDb.Close()
 
-	accountDb, err := sqlx.Connect("sqlite3", "users.db")
+	accountDb, err := sqlx.Connect(driverName, "users.db")
 	if err != nil {
 		panic("failed to connect")
 	}
